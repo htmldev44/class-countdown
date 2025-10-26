@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Class Countdown</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <button class="toggle-dark">🌙 Toggle Dark Mode</button>
+  <h1>⏳ class countdown (also give william a cookie)</h1>
+
+  <form method="POST">
+    <input type="text" name="name" placeholder="Event name" required>
+    <input type="datetime-local" name="date" required>
+    <select name="category">
+      <option value="Exam">📘 Exam</option>
+      <option value="Holiday">🏖️ Holiday</option>
+      <option value="Personal">🎯 Personal</option>
+    </select>
+    <button type="submit">Add Event</button>
+  </form>
+
+  <div id="countdowns">
+    {% for id, name, date, category in events %}
+      <div class="event">
+        <h2>{{ name }} <span class="tag">{{ category }}</span></h2>
+        <p>{{ date }}</p>
+        <p class="countdown" data-date="{{ date }}" data-id="{{ id }}"></p>
+        <div class="panic"></div>
+        <form method="POST" action="/delete/{{ id }}">
+          <button class="delete-btn">🗑️ Delete</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>📚 School Year Progress</h2>
+  <div id="school-progress">
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+    <p id="progress-label"></p>
+    <p id="days-left"></p>
+  </div>
+
+  <div id="meme-section">
+    <h3>🎉 Daily Meme</h3>
+    <img id="meme" src="" width="300">
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    const memes = [
+      "https://i.imgflip.com/30b1gx.jpg",
+      "https://i.imgflip.com/1bij.jpg",
+      "https://i.imgflip.com/4/4t0m5.jpg",
+      "https://i.imgflip.com/2hgfw.jpg",
+      "https://i.imgflip.com/3si4.jpg"
+    ];
+
+    document.getElementById("meme").src = memes[Math.floor(Math.random() * memes.length)];
+
+    function getPanicLevel(days) {
+      if (days > 30) return "😌 Chill";
+      if (days > 14) return "😬 Mild Panic";
+      if (days > 7) return "😱 Panic Mode";
+      return "🔥 Code Red";
+    }
+
+    function celebrate(id) {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      fetch(`/delete/${id}`, { method: "POST" }).then(() => location.reload());
+    }
+
+    function updateCountdowns() {
+      document.querySelectorAll(".countdown").forEach(el => {
+        const dateStr = el.dataset.date;
+        const eventDate = new Date(dateStr);
+        const now = new Date();
+        const diff = eventDate - now;
+
+        if (diff <= 0) {
+          el.textContent = "🎉 It's here!";
+          el.nextElementSibling.textContent = "";
+          const id = el.dataset.id;
+          celebrate(id);
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        el.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s left`;
+        el.nextElementSibling.textContent = getPanicLevel(days);
+      });
+    }
+
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
+
+    const startDate = new Date("2025-08-28T00:00:00");
+    const endDate = new Date("2026-06-05T00:00:00");
+    const now = new Date();
+    const totalTime = endDate - startDate;
+    const elapsed = now - startDate;
+    const remaining = endDate - now;
+    const percent = Math.min(100, Math.max(0, (elapsed / totalTime) * 100));
+    const daysLeft = Math.ceil(remaining / (1000 * 60 * 60 * 24));
+
+    document.getElementById("progress-fill").style.width = `${percent}%`;
+    document.getElementById("progress-label").textContent = `${percent.toFixed(1)}% of the school year completed`;
+    document.getElementById("days-left").textContent = `📆 ${daysLeft} days remaining in school`;
+
+    document.querySelector(".toggle-dark").addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+    });
+  </script>
+</body>
+</html>
